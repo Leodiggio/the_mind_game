@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1037614044655",
+    "project_id": "themind-4df90",
+    "storage_bucket": "themind-4df90.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1037614044655:android:b67f24945746d66c3bd21a",
+        "android_client_info": {
+          "package_name": "com.example.the_mind_game"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjF1okIR3vIxZ2enbHOtxFbmg5mFGFgtg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

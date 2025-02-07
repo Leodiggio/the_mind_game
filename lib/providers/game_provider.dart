@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:the_mind_game/models/game_state_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/card_model.dart';
 import '../models/user_model.dart';
@@ -10,11 +11,23 @@ class GameProvider with ChangeNotifier {
   final LocalStorage storage;
   GameState? _gameState;
 
+  final int _maxLevel = 12;
+
+  bool _isGameOver = false;
+  bool _hasWon = false;
+
   GameState? get gameState => _gameState;
+
+  bool get isGameOver => _isGameOver;
+
+  bool get hasWon => _hasWon;
 
   GameProvider(this.storage);
 
   void startNewGame({int level = 1, required List<User> players}) {
+    _isGameOver = false;
+    _hasWon = false;
+
     final deck = _generateDeck();
 
     final newState = GameState(
@@ -26,7 +39,6 @@ class GameProvider with ChangeNotifier {
         stars: 2);
 
     final distributedState = _distributeCards(newState);
-
     _gameState = distributedState;
 
     notifyListeners();
@@ -56,8 +68,8 @@ class GameProvider with ChangeNotifier {
     );
   }
 
-  void playCard({required uderId, required CardModel card}) {
-    if (_gameState == null) return;
+  void playCard({required userId, required CardModel card}) {
+    if (_gameState == null || _isGameOver || _hasWon) return;
 
     final state = _gameState!;
     final currentPlayers = List<User>.from(state.players);
@@ -80,12 +92,10 @@ class GameProvider with ChangeNotifier {
     final updatedPlayed = List<CardModel>.from(state.playedCards);
     updatedPlayed.add(card.copyWith(isPlayed: true));
 
-    // Controlla se la carta è effettivamente superiore all'ultima (se vuoi la logica “ordinata”)
+    // Controlla ordine (se la carta giocata è minore dell’ultima giocata, perdi 1 vita)
     if (updatedPlayed.length > 1) {
       final lastCard = updatedPlayed[updatedPlayed.length - 2];
       if (card.value < lastCard.value) {
-        // Esempio: carta non in ordine => perdi una vita
-        // (Logica extra: controllare se la vita va sotto zero, fine partita, ecc.)
         final newLives = state.lives - 1;
         _gameState = state.copyWith(
           lives: newLives,
@@ -107,11 +117,46 @@ class GameProvider with ChangeNotifier {
       );
     }
 
+    // Dopo aver giocato la carta, verifica se la partita è finita / passare di livello / vittoria
+    _checkGameProgress();
+
     notifyListeners();
   }
 
-  void useStar() {
+  void _checkGameProgress() {
     if (_gameState == null) return;
+
+    final state = _gameState!;
+
+    // 1) Controlla se vite <= 0, Game Over
+    if (state.lives <= 0) {
+      _isGameOver = true;
+      return;
+    }
+
+    // 2) Controlla se tutti i giocatori hanno finito le carte
+    // (cioè ogni `User.handCards` è vuota)
+    final allHandsEmpty = state.players.every((p) => p.handCards.isEmpty);
+    if (allHandsEmpty) {
+      // Se sei all’ultimo livello => Vittoria
+      if (state.level >= _maxLevel) {
+        _hasWon = true;
+        return;
+      } else {
+        // Altrimenti, passa al livello successivo
+        final newLevel = state.level + 1;
+        var nextState = state.copyWith(level: newLevel);
+
+        // Ridistribuisci le carte del livello successivo
+        nextState = _distributeCards(nextState);
+
+        _gameState = nextState;
+      }
+    }
+  }
+
+  void useStar() {
+    if (_gameState == null || _isGameOver || _hasWon) return;
     final state = _gameState!;
     if (state.stars <= 0) {
       // Nessuna stella disponibile, ignora o mostra errore
@@ -147,6 +192,9 @@ class GameProvider with ChangeNotifier {
       playedCards: updatedPlayed,
       stars: newStars,
     );
+
+    _checkGameProgress();
+
     notifyListeners();
   }
 
@@ -167,7 +215,9 @@ class GameProvider with ChangeNotifier {
   Future<void> saveGameState() async {
     if (_gameState == null) return;
     final map = _gameState!.toMap();
-    storage.setItem("gameState", map);
+
+    final strMap = jsonEncode(map);
+    storage.setItem("gameState", strMap);
   }
 
   Future<void> loadGameState() async {
@@ -175,9 +225,16 @@ class GameProvider with ChangeNotifier {
     if (loadedMap == null) {
       return;
     }
+    final Map<String, dynamic> loadedMapDec = jsonDecode(loadedMap);
 
-    final loadedState = GameState.fromMap(Map<String, dynamic>.from(loadedMap));
+    final loadedState =
+        GameState.fromMap(Map<String, dynamic>.from(loadedMapDec));
     _gameState = loadedState;
+
+    _isGameOver = false;
+    _hasWon = false;
+    _checkGameProgress();
+
     notifyListeners();
   }
 }
