@@ -75,7 +75,7 @@ class GameProvider with ChangeNotifier {
     final currentPlayers = List<User>.from(state.players);
 
     // Trova l'indice del player
-    final playerIndex = currentPlayers.indexWhere((p) => p.id == userId);
+    final playerIndex = currentPlayers.indexWhere((p) => p.uid == userId);
     if (playerIndex == -1) return;
 
     final currentPlayer = currentPlayers[playerIndex];

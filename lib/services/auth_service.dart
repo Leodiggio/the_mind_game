@@ -13,19 +13,39 @@ class AuthService {
   }
 
   Future<void> signup(String email, String password, String nickname) async {
-    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
-      email: email.trim(),
-      password: password.trim(),
-    );
+    //final String finalNickname = nickname.trim().isEmpty ? 'Player' : nickname.trim();
 
-    final user = credential.user;
-    if (user != null) {
-      final String finalNickname = nickname.isEmpty ? 'Player' : nickname;
-      await _firestore.collection('users').doc(user.uid).set({
-        'nickname': finalNickname,
-        'email': user.email,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+    //Controllo se un nickname uguale esiste già su Firestore
+    //Per eseguire questa query è necessario modificare le regole da Pirestore
+    //final QuerySnapshot nicknameSnapshot = await _firestore
+    //    .collection('users')
+    //    .where('nickname', isEqualTo: finalNickname)
+    //    .limit(1)
+    //    .get();
+
+    //if (nicknameSnapshot.docs.isNotEmpty) {
+      // nickname già usato
+    //  throw Exception("nickname-already-in-use");
+    //}
+
+    //Se arrivo qui, nickname non usato. Creo l'account con FirebaseAuth.
+    try {
+      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      final user = credential.user;
+      if (user != null) {
+        final String finalNickname = nickname.isEmpty ? 'Player' : nickname;
+        await _firestore.collection('users').doc(user.uid).set({
+          'nickname': finalNickname,
+          'email': user.email,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } on FirebaseAuthException catch (e) {
+      // Se l'email è duplicata, troverai "e.code == 'email-already-in-use'"
+      rethrow;
     }
   }
 

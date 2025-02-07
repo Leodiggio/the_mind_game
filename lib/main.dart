@@ -29,10 +29,13 @@ class MyApp extends StatelessWidget {
             final user = snapshot.data;
             // Se user == null => non loggato => mostra LoginScreen
             if (user == null) {
-              return LoginScreen(authService: authService,);
+              return LoginScreen(
+                authService: authService,
+              );
             } else {
               // se c'è un utente loggato => HomeScreen
-              return HomeScreen(userService: userService,);
+              return HomeScreen(
+                  userService: userService, authService: authService);
             }
           }
           return const Scaffold(
