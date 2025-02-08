@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import '../models/card_model.dart';
+import '../models/game_state_model.dart';
 import '../models/lobby_model.dart';
+import '../models/user_model.dart';
 
 class LobbyService {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -29,7 +31,7 @@ class LobbyService {
       throw Exception("Nessun giocatore per avviare la partita");
     }
 
-    final List<User> userModels = await _fetchPlayersData(playerUids);
+    final List<UserModel> userModels = await fetchPlayersData(playerUids);
 
     final deck = _generateDeck();
 
@@ -41,8 +43,10 @@ class LobbyService {
       players: distributedPlayers,
       deck: deck,
       playedCards: [],
-      lives: 3, // quante vite vuoi all'inizio
+      lives: 3,
+      // quante vite vuoi all'inizio
       stars: 2, // quante stelle vuoi
+      status: "Playing"
     );
 
     await lobbyRef.update({
@@ -73,11 +77,11 @@ class LobbyService {
       "players": FieldValue.arrayUnion([uid])
     });
   }
-  
+
   Future<void> leaveLobby(String lobbyId) async {
     final uid = auth.currentUser?.uid;
     if (uid == null) throw Exception("User non loggato");
-    
+
     final lobbyRef = firestore.collection("lobbies").doc(lobbyId);
     await lobbyRef.update({
       "players": FieldValue.arrayRemove([uid])
@@ -91,8 +95,8 @@ class LobbyService {
         .where('status', isEqualTo: 'waiting')
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
-      return Lobby.fromMap(doc.id, doc.data());
-    }).toList());
+              return Lobby.fromMap(doc.id, doc.data());
+            }).toList());
   }
 
   /// Recupera i dettagli di una singola lobby
@@ -105,5 +109,65 @@ class LobbyService {
       if (!docSnap.exists) return null;
       return Lobby.fromMap(docSnap.id, docSnap.data()!);
     });
+  }
+
+  /// Esempio: per ogni uid, prendo i campi nickname ed email da "users/{uid}"
+  Future<List<UserModel>> fetchPlayersData(List<String> playerUids) async {
+    List<UserModel> result = [];
+
+    for (final uid in playerUids) {
+      final snap = await firestore.collection('users').doc(uid).get();
+      if (snap.exists) {
+        final userMap = snap.data()!;
+        final nickname = userMap['nickname'] as String? ?? 'Player-$uid';
+        final email = userMap['email'] as String? ?? '';
+        // Creiamo un oggetto 'User' del tuo game
+        result.add(UserModel(
+          uid: uid,
+          email: email,
+          nickname: nickname,
+          handCards: [],
+        ));
+      } else {
+        // se per caso non esistesse /users/uid, si può gestire l'errore o inserire placeholder
+        result.add(UserModel(
+          uid: uid,
+          email: '',
+          nickname: 'Player-$uid',
+          handCards: [],
+        ));
+      }
+    }
+    return result;
+  }
+
+  List<CardModel> _generateDeck() {
+    final deck = List.generate(
+      100,
+      (i) => CardModel(value: i + 1, isPlayed: false),
+    );
+    deck.shuffle();
+    return deck;
+  }
+
+  List<UserModel> _distributeCards(
+      List<UserModel> players, List<CardModel> deck, int level) {
+    var tempDeck = List<CardModel>.from(deck); // copia del deck
+    var updatedPlayers = <UserModel>[];
+
+    for (final player in players) {
+      final drawn = tempDeck.take(level).toList();
+      tempDeck.removeRange(0, level);
+
+      final updatedPlayer = player.copyWith(handCards: drawn);
+      updatedPlayers.add(updatedPlayer);
+    }
+
+    // Aggiorno 'deck' con ciò che resta
+    deck
+      ..clear()
+      ..addAll(tempDeck);
+
+    return updatedPlayers;
   }
 }

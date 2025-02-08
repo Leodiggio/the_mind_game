@@ -1,6 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:the_mind_game/models/card_model.dart';
-
 import 'game_state_model.dart';
 
 class Lobby {

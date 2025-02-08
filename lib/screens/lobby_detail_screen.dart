@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:the_mind_game/models/user_model.dart';
 
 import '../models/lobby_model.dart';
 import '../services/lobby_service.dart';
@@ -22,9 +24,12 @@ class LobbyDetailScreen extends StatelessWidget {
   }
 
   Future<void> _startGame() async {
-    // set status = "started" ?
-    // o crea un doc "gameState" con le carte?
-    await lobbyService.startLobby(lobbyId);
+    try {
+      await lobbyService.startLobby(lobbyId);
+    } catch (e) {
+      print("Errore avvio lobby: $e");
+      // mostrare snackbar o dialog
+    }
   }
 
   @override
@@ -41,29 +46,53 @@ class LobbyDetailScreen extends StatelessWidget {
           if (lobby == null) {
             return Center(child: Text("Lobby non trovata"));
           }
-          return Column(
-            children: [
-              Text("Host: ${lobby.hostUid}"),
-              Text("Status: ${lobby.status}"),
-              Divider(),
-              Text("Players:"),
-              ...lobby.players.map((p) => Text(p)).toList(),
-              Divider(),
-              // Pulsanti di join/leave
-              ElevatedButton(
-                onPressed: _join,
-                child: Text("Join"),
-              ),
-              ElevatedButton(
-                onPressed: _leave,
-                child: Text("Leave"),
-              ),
-              if (/* se l'utente è hostUid */ false)
-                ElevatedButton(
-                  onPressed: _startGame,
-                  child: Text("Start"),
-                )
-            ],
+
+          final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+          return FutureBuilder<List<UserModel>>(
+            future: lobbyService.fetchPlayersData(lobby.players),
+            builder: (context, usersSnapshot) {
+              if (usersSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (usersSnapshot.hasError) {
+                return Text(
+                    "Errore caricamento utenti: ${usersSnapshot.error}");
+              }
+              final userModels = usersSnapshot.data ?? [];
+
+              return Column(
+                children: [
+                  Text("Host: ${lobby.hostUid}"),
+                  Text("Status: ${lobby.status}"),
+                  Divider(),
+                  Text("Players:"),
+                  ...userModels.map((u) => Text(u.nickname)).toList(),
+                  Divider(),
+                  Row(
+                    children: [
+                      // Pulsanti di join/leave
+                      ElevatedButton(
+                        onPressed: _join,
+                        child: Text("Join"),
+                      ),
+                      const SizedBox(
+                        width: 16,
+                      ),
+                      ElevatedButton(
+                        onPressed: _leave,
+                        child: Text("Leave"),
+                      ),
+                    ],
+                  ),
+                  if (currentUid == lobby.hostUid && lobby.status == "waiting")
+                    ElevatedButton(
+                      onPressed: _startGame,
+                      child: Text("Start"),
+                    )
+                ],
+              );
+            },
           );
         },
       ),

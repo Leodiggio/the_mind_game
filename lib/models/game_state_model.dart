@@ -3,11 +3,12 @@ import 'card_model.dart';
 
 class GameState {
   final int level;
-  final List<User> players;
+  final List<UserModel> players;
   final List<CardModel> deck;
   final List<CardModel> playedCards;
   final int lives;
   final int stars;
+  final String status;
 
   GameState(
       {required this.level,
@@ -15,22 +16,26 @@ class GameState {
       required this.deck,
       required this.playedCards,
       required this.lives,
-      required this.stars});
+      required this.stars,
+      required this.status  //Won o Game Over
+      });
 
   GameState copyWith(
       {int? level,
-      List<User>? players,
+      List<UserModel>? players,
       List<CardModel>? deck,
       List<CardModel>? playedCards,
       int? lives,
-      int? stars}) {
+      int? stars,
+      String? status}) {
     return GameState(
         level: level ?? this.level,
         players: players ?? this.players,
         deck: deck ?? this.deck,
         playedCards: playedCards ?? this.playedCards,
         lives: lives ?? this.lives,
-        stars: stars ?? this.stars);
+        stars: stars ?? this.stars,
+        status: status ?? this.status);
   }
 
   Map<String, dynamic> toMap() {
@@ -41,13 +46,14 @@ class GameState {
       "deck": deck.map((c) => c.toMap()).toList(),
       "playedCards": playedCards.map((c) => c.toMap()).toList(),
       "lives": lives,
-      "stars": stars
+      "stars": stars,
+      "status": status
     };
   }
 
   factory GameState.fromMap(Map<String, dynamic> map) {
     final playersList = (map["players"] as List)
-        .map((p) => User.fromMap(p as Map<String, dynamic>))
+        .map((p) => UserModel.fromMap(p as Map<String, dynamic>))
         .toList();
     final deckList = (map["deck"] as List)
         .map((c) => CardModel.fromMap(c as Map<String, dynamic>))
@@ -62,6 +68,7 @@ class GameState {
         deck: deckList,
         playedCards: playedList,
         lives: map["lives"] as int,
-        stars: map["stars"] as int);
+        stars: map["stars"] as int,
+        status: map["status"] as String);
   }
 }

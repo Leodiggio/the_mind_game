@@ -1,31 +1,27 @@
 import 'package:the_mind_game/models/card_model.dart';
 
-class User {
+class UserModel {
   final String uid;
   final String email;
   final String nickname;
-  final bool isAI;
   final List<CardModel> handCards;
 
-  User(
+  UserModel(
       {required this.uid,
       required this.email,
       required this.nickname,
-      this.isAI = false,
       this.handCards = const []});
 
-  User copyWith({
+  UserModel copyWith({
     String? uid,
     String? email,
     String? nickname,
-    bool? isAI,
     List<CardModel>? handCards,
   }) {
-    return User(
+    return UserModel(
       uid: uid ?? this.uid,
       email: email ?? this.email,
       nickname: nickname ?? this.nickname,
-      isAI: isAI ?? this.isAI,
       handCards: handCards ?? this.handCards,
     );
   }
@@ -35,21 +31,19 @@ class User {
       "uid": uid,
       "email": email,
       "nickname": nickname,
-      "isAI": isAI,
       "handCards": handCards.map((c) => c.toMap()).toList()
     };
   }
 
-  factory User.fromMap(Map<String, dynamic> map) {
+  factory UserModel.fromMap(Map<String, dynamic> map) {
     final handCardsList = (map["handCards"] as List)
         .map((c) => CardModel.fromMap(c as Map<String, dynamic>))
         .toList();
 
-    return User(
+    return UserModel(
         uid: map["uid"] as String,
         email: map["email"] as String,
         nickname: map["nickname"] as String,
-        isAI: map["isAI"] as bool,
         handCards: handCardsList);
   }
 }

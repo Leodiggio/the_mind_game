@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:the_mind_game/screens/lobby_detail_screen.dart';
 
 import '../models/lobby_model.dart';
 import '../services/lobby_service.dart';
@@ -37,7 +38,14 @@ class LobbyListScreen extends StatelessWidget {
                 title: Text("Lobby ${lobby.lobbyId}"),
                 subtitle: Text("Host: ${lobby.hostUid} - Players: ${lobby.players.length}"),
                 onTap: () {
-                  // Naviga alla LobbyDetailScreen per joinare/vedere i player
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => LobbyDetailScreen(
+                              lobbyId: lobby.lobbyId,
+                              lobbyService: lobbyService)
+                      ),
+                  );
                 },
               );
             },
