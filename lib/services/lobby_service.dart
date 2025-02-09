@@ -46,7 +46,7 @@ class LobbyService {
       lives: 3,
       // quante vite vuoi all'inizio
       stars: 2, // quante stelle vuoi
-      status: "Playing"
+      status: "inGame"
     );
 
     await lobbyRef.update({
@@ -86,6 +86,32 @@ class LobbyService {
     await lobbyRef.update({
       "players": FieldValue.arrayRemove([uid])
     });
+
+    // Ricarica il doc per vedere quanti players sono rimasti
+    final docSnap = await lobbyRef.get();
+    if (!docSnap.exists) return; // la lobby potrebbe non esistere più
+
+    final data = docSnap.data()!;
+    final status = data['status'] as String? ?? 'waiting';
+    final playersList = (data['players'] as List<dynamic>?)?.cast<String>() ?? [];
+
+    // Se la partita era già avviata e ora c'è un solo player, aggiorniamo a "Game Over"
+    if (status == 'inGame' && playersList.length == 1) {
+      // Imposta lo status della lobby a 'finished'
+      // e aggiorna gameState.status = 'Game Over'
+      final gameStateMap = data['gameState'];
+      if (gameStateMap != null) {
+        final newGameState = Map<String, dynamic>.from(gameStateMap);
+        newGameState['status'] = 'Game Over';
+        await lobbyRef.update({
+          'status': 'finished',
+          'gameState': newGameState,
+        });
+      } else {
+        // se non c'è un gameState, aggiorni solo 'status'
+        await lobbyRef.update({'status': 'finished'});
+      }
+    }
   }
 
   /// Mostra la lista di tutte le lobbies con status=waiting

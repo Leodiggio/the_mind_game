@@ -97,7 +97,7 @@ class GameService with ChangeNotifier {
         .update({'gameState': newState.toMap()});
   }
 
-  Future<void> useStar(String lobbyId, String userId, CardModel card) async {
+  Future<void> useStar(String lobbyId, String userId) async {
     if (_gameState == null) return;
     var state = _gameState!;
 

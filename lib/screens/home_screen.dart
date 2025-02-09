@@ -60,18 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // TEST: Creazione rapida di una lobby e stampo l'ID in console
-  Future<void> _quickCreateLobby() async {
-    try {
-      final lobbyId = await lobbyService.createLobby();
-      print("Lobby creata con ID = $lobbyId");
-      // Potresti navigare automaticamente alla LobbyDetailScreen(lobbyId)
-      // ...
-    } catch (e) {
-      print("Errore creazione lobby: $e");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final title = isLoading
@@ -95,10 +83,10 @@ class _HomeScreenState extends State<HomeScreen> {
           children: <Widget>[
             Text("Benvenuto nella Home!"),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _quickCreateLobby,
-              child: Text("Crea Lobby rapida"),
-            ),
+            //ElevatedButton(
+            //  onPressed: _quickCreateLobby,
+            //  child: Text("Crea Lobby rapida"),
+            //),
             ElevatedButton(
               onPressed: _goLobbyList,
               child: Text("Vai alla Lobby List"),
