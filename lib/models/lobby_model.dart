@@ -45,6 +45,6 @@ class Lobby {
         players: List<String>.from(map["players"] as List),
         gameState: map["gameState"] == null
             ? null
-            : GameState.fromMap(map["gameState" as Map<String, dynamic>]));
+            : GameState.fromMap(map["gameState"] as Map<String, dynamic>));
   }
 }

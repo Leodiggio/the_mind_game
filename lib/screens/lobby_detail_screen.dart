@@ -21,7 +21,6 @@ class LobbyDetailScreen extends StatefulWidget {
 }
 
 class _LobbyDetailScreenState extends State<LobbyDetailScreen> {
-
   Future<void> _join() async {
     await widget.lobbyService.joinLobby(widget.lobbyId);
   }
@@ -36,15 +35,15 @@ class _LobbyDetailScreenState extends State<LobbyDetailScreen> {
       await widget.lobbyService.startLobby(widget.lobbyId);
 
       // 2) Ora navighi direttamente alla GameScreen
-      setState(() {
-      });
+      //setState(() {
+      //});
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => GameScreen(lobbyId: widget.lobbyId),
-        ),
-      );
+      //Navigator.pushReplacement(
+      //  context,
+      //  MaterialPageRoute(
+      //    builder: (context) => GameScreen(lobbyId: widget.lobbyId),
+      //  ),
+      //);
     } catch (e) {
       print("Errore avvio lobby: $e");
       // mostrare snackbar o dialog
@@ -60,27 +59,25 @@ class _LobbyDetailScreenState extends State<LobbyDetailScreen> {
       body: StreamBuilder<Lobby?>(
         stream: widget.lobbyService.getLobbyStream(widget.lobbyId),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
-            return CircularProgressIndicator();
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           final lobby = snapshot.data;
           if (lobby == null) {
             return Center(child: Text("Lobby non trovata"));
           }
 
-          // Controllo globale su ogni device per navigare automaticamente a GameScreen
+          // Se la lobby è passata a "inGame" E non abbiamo ancora navigato,
+          // vai alla GameScreen automaticamente.
           if (lobby.status == 'inGame') {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                });
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GameScreen(lobbyId: widget.lobbyId),
-                  ),
-                );
-              }
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GameScreen(lobbyId: lobby.lobbyId),
+                ),
+              );
             });
           }
 
@@ -130,7 +127,6 @@ class _LobbyDetailScreenState extends State<LobbyDetailScreen> {
                     ),
                 ],
               );
-
             },
           );
         },

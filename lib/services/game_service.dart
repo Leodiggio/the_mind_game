@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:the_mind_game/models/game_state_model.dart';
+import 'package:the_mind_game/services/lobby_service.dart';
+import 'package:the_mind_game/utils/distribute_cards.dart';
 
 import '../models/card_model.dart';
 import '../models/user_model.dart';
+import '../utils/generate_deck.dart';
 
 class GameService with ChangeNotifier {
   GameState? _gameState;
@@ -51,12 +54,13 @@ class GameService with ChangeNotifier {
   GameState? get gameState => _gameState;
 
   Future<void> playCard(String lobbyId, String userId, CardModel card) async {
+    final deck = generateDeck();
     // 1. Copia locale dell’ultimo _gameState (grazie a listenToGameState, viene sempre aggiornato)
     if (_gameState == null) return;
     var state = _gameState!;
 
     // 2. Applica la logica: trova il player, rimuovi la carta, ecc.
-    final currentPlayers = [...state.players]; // cloniamo la lista
+    var currentPlayers = [...state.players]; // cloniamo la lista
     final playerIndex = currentPlayers.indexWhere((p) => p.uid == userId);
     if (playerIndex == -1) return;
 
@@ -66,7 +70,7 @@ class GameService with ChangeNotifier {
     final updatedPlayer = currentPlayer.copyWith(handCards: newHand);
     currentPlayers[playerIndex] = updatedPlayer;
 
-    final updatedPlayed = [...state.playedCards, card.copyWith(isPlayed: true)];
+    var updatedPlayed = [...state.playedCards, card.copyWith(isPlayed: true)];
 
     int newLives = state.lives;
     if (updatedPlayed.length > 1) {
@@ -74,6 +78,13 @@ class GameService with ChangeNotifier {
       if (card.value < lastCard.value) {
         newLives = state.lives - 1;
       }
+    }
+
+    int newLevel = state.level;
+    if (currentPlayers.every((p) => p.handCards.isEmpty)) {
+      newLevel = state.level + 1;
+      updatedPlayed = [];
+      currentPlayers = distributeCards(currentPlayers, deck, newLevel);
     }
 
     String newStatus = state.status;
@@ -85,6 +96,7 @@ class GameService with ChangeNotifier {
     }
 
     final newState = state.copyWith(
+        level: newLevel,
         players: currentPlayers,
         playedCards: updatedPlayed,
         lives: newLives,
@@ -148,4 +160,6 @@ class GameService with ChangeNotifier {
         .doc(lobbyId)
         .update({'gameState': newState.toMap()});
   }
+
+
 }

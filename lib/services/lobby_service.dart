@@ -4,6 +4,8 @@ import '../models/card_model.dart';
 import '../models/game_state_model.dart';
 import '../models/lobby_model.dart';
 import '../models/user_model.dart';
+import '../utils/distribute_cards.dart';
+import '../utils/generate_deck.dart';
 
 class LobbyService {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -33,19 +35,16 @@ class LobbyService {
 
     final List<UserModel> userModels = await fetchPlayersData(playerUids);
 
-    final deck = _generateDeck();
-
-    final int initialLevel = 1;
-    final distributedPlayers = _distributeCards(userModels, deck, initialLevel);
+    final deck = generateDeck();
+    final distributedPlayers = distributeCards(userModels, deck, 1);
 
     final newGameState = GameState(
-      level: initialLevel,
+      level: 1,
       players: distributedPlayers,
       deck: deck,
       playedCards: [],
       lives: 3,
-      // quante vite vuoi all'inizio
-      stars: 2, // quante stelle vuoi
+      stars: 2,
       status: "inGame"
     );
 
@@ -165,35 +164,5 @@ class LobbyService {
       }
     }
     return result;
-  }
-
-  List<CardModel> _generateDeck() {
-    final deck = List.generate(
-      100,
-      (i) => CardModel(value: i + 1, isPlayed: false),
-    );
-    deck.shuffle();
-    return deck;
-  }
-
-  List<UserModel> _distributeCards(
-      List<UserModel> players, List<CardModel> deck, int level) {
-    var tempDeck = List<CardModel>.from(deck); // copia del deck
-    var updatedPlayers = <UserModel>[];
-
-    for (final player in players) {
-      final drawn = tempDeck.take(level).toList();
-      tempDeck.removeRange(0, level);
-
-      final updatedPlayer = player.copyWith(handCards: drawn);
-      updatedPlayers.add(updatedPlayer);
-    }
-
-    // Aggiorno 'deck' con ciò che resta
-    deck
-      ..clear()
-      ..addAll(tempDeck);
-
-    return updatedPlayers;
   }
 }
