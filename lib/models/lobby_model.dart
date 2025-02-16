@@ -3,7 +3,7 @@ import 'game_state_model.dart';
 class Lobby {
   final String lobbyId;
   final String hostUid;
-  final String status;
+  final String status;  //waiting, inGame
   final List<String> players;
   final GameState? gameState;
 

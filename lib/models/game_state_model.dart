@@ -8,7 +8,7 @@ class GameState {
   final List<CardModel> playedCards;
   final int lives;
   final int stars;
-  final String status;
+  final String status;  //Won, Game Over, inGame
 
   GameState(
       {required this.level,

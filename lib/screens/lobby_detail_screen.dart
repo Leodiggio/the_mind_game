@@ -31,21 +31,21 @@ class _LobbyDetailScreenState extends State<LobbyDetailScreen> {
 
   Future<void> _startGame() async {
     try {
-      // 1) Avvia la partita su Firestore (status inGame + creazione gameState)
+      //Avvia la partita su Firestore (status inGame + creazione gameState)
       await widget.lobbyService.startLobby(widget.lobbyId);
-
-      // 2) Ora navighi direttamente alla GameScreen
-      //setState(() {
-      //});
-
-      //Navigator.pushReplacement(
-      //  context,
-      //  MaterialPageRoute(
-      //    builder: (context) => GameScreen(lobbyId: widget.lobbyId),
-      //  ),
-      //);
     } catch (e) {
-      print("Errore avvio lobby: $e");
+      await showDialog(
+          context: context,
+          builder: (ctx) {
+            return AlertDialog(
+              title: Text("Errore"),
+              content: Text(e.toString()),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx), child: Text("OK"))
+              ],
+            );
+          });
       // mostrare snackbar o dialog
     }
   }
@@ -63,6 +63,24 @@ class _LobbyDetailScreenState extends State<LobbyDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          if (!snapshot.hasData || snapshot.data == null) {
+            // la lobby non esiste più
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("La lobby è stata eliminata o non esiste più."),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Torna indietro
+                    },
+                    child: Text("Ok"),
+                  )
+                ],
+              ),
+            );
+          }
+
           final lobby = snapshot.data;
           if (lobby == null) {
             return Center(child: Text("Lobby non trovata"));
@@ -72,7 +90,7 @@ class _LobbyDetailScreenState extends State<LobbyDetailScreen> {
           // vai alla GameScreen automaticamente.
           if (lobby.status == 'inGame') {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => GameScreen(lobbyId: lobby.lobbyId),

@@ -3,12 +3,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:the_mind_game/models/game_state_model.dart';
-import 'package:the_mind_game/services/lobby_service.dart';
 import 'package:the_mind_game/utils/distribute_cards.dart';
 
 import '../models/card_model.dart';
 import '../models/user_model.dart';
-import '../utils/generate_deck.dart';
 
 class GameService with ChangeNotifier {
   GameState? _gameState;
@@ -54,7 +52,7 @@ class GameService with ChangeNotifier {
   GameState? get gameState => _gameState;
 
   Future<void> playCard(String lobbyId, String userId, CardModel card) async {
-    final deck = generateDeck();
+    //final deck = generateDeck();
     // 1. Copia locale dell’ultimo _gameState (grazie a listenToGameState, viene sempre aggiornato)
     if (_gameState == null) return;
     var state = _gameState!;
@@ -73,26 +71,31 @@ class GameService with ChangeNotifier {
     var updatedPlayed = [...state.playedCards, card.copyWith(isPlayed: true)];
 
     int newLives = state.lives;
+    int newLevel = state.level;
+    String newStatus = state.status;
     if (updatedPlayed.length > 1) {
       final lastCard = updatedPlayed[updatedPlayed.length - 2];
       if (card.value < lastCard.value) {
-        newLives = state.lives - 1;
+        if (state.lives == 1) {
+          newStatus = 'Game Over';
+        } else {
+          newLives = state.lives - 1;
+          currentPlayers =
+              distributeCards(currentPlayers, state.deck, newLevel);
+          updatedPlayed = [];
+        }
       }
-    }
-
-    int newLevel = state.level;
-    if (currentPlayers.every((p) => p.handCards.isEmpty)) {
-      newLevel = state.level + 1;
-      updatedPlayed = [];
-      currentPlayers = distributeCards(currentPlayers, deck, newLevel);
-    }
-
-    String newStatus = state.status;
-    if (newLives <= 0) {
-      newStatus = 'Game Over'; // Partita terminata
-    } else if (state.level >= _maxLevel &&
-        currentPlayers.every((p) => p.handCards.isEmpty)) {
-      newStatus = 'Won'; // Partita vinta
+      else if (currentPlayers.every((p) => p.handCards.isEmpty)) {
+        if (state.level == _maxLevel) {
+          newStatus = 'Won'; // Partita vinta
+        }
+        else {
+          newLevel = state.level + 1;
+          updatedPlayed = [];
+          currentPlayers =
+              distributeCards(currentPlayers, state.deck, newLevel);
+        }
+      }
     }
 
     final newState = state.copyWith(
@@ -102,11 +105,24 @@ class GameService with ChangeNotifier {
         lives: newLives,
         status: newStatus);
 
-    // 3. Scrivi la nuova gameState su Firestore
-    await FirebaseFirestore.instance
-        .collection('lobbies')
-        .doc(lobbyId)
-        .update({'gameState': newState.toMap()});
+    // Scrivi il nuovo gameState su Firestore, se si è vinto o perso, la lobby torna in waiting
+    if (newStatus == "Game Over" || newStatus == "Won") {
+      await FirebaseFirestore.instance
+          .collection('lobbies')
+          .doc(lobbyId)
+          .update({
+        'gameState': newState.toMap(),
+        'status': 'waiting', // O "finished"
+      });
+    } else {
+      await FirebaseFirestore.instance
+          .collection('lobbies')
+          .doc(lobbyId)
+          .update({
+        'gameState': newState.toMap(),
+        // lo status della lobby rimane invariato
+      });
+    }
   }
 
   Future<void> useStar(String lobbyId, String userId) async {
