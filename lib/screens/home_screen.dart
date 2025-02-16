@@ -23,7 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? nickname;
   bool isLoading = true;
 
-  final lobbyService = LobbyService(); // Iniettiamo o creiamo qui
+  final lobbyService = LobbyService();
+  final userService = UserService();// Iniettiamo o creiamo qui
 
   void _logout() async {
     await widget.authService.logout();
@@ -50,12 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // TEST: Naviga alla LobbyList per vedere le lobby "waiting" e potersi unire
+  // Naviga alla LobbyList per vedere le lobby "waiting" e potersi unire
   void _goLobbyList() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LobbyListScreen(lobbyService: lobbyService),
+        builder: (context) => LobbyListScreen(lobbyService: lobbyService, userService: userService,),
       ),
     );
   }

@@ -24,7 +24,8 @@ class LobbyService {
     final lobby = Lobby.fromMap(docSnap.id, data);
 
     if (lobby.players.length < 2) {
-      throw Exception("Non ci sono abbastanza giocatori per iniziare la partita");
+      throw Exception(
+          "Non ci sono abbastanza giocatori per iniziare la partita");
     }
 
     if (lobby.status != "waiting") {
@@ -42,14 +43,13 @@ class LobbyService {
     final distributedPlayers = distributeCards(userModels, deck, 1);
 
     final newGameState = GameState(
-      level: 1,
-      players: distributedPlayers,
-      deck: deck,
-      playedCards: [],
-      lives: 3,
-      stars: 2,
-      status: "inGame"
-    );
+        level: 1,
+        players: distributedPlayers,
+        deck: deck,
+        playedCards: [],
+        lives: 3,
+        stars: 2,
+        status: "inGame");
 
     await lobbyRef.update({
       'status': 'inGame',
@@ -98,8 +98,8 @@ class LobbyService {
     //dati della lobby
     final data = docSnap.data()!;
     final hostUid = data['hostUid'] as String?;
-    //final status = data['status'] as String? ?? 'waiting';
-    final playersList = (data['players'] as List<dynamic>?)?.cast<String>() ?? [];
+    final playersList =
+        (data['players'] as List<dynamic>?)?.cast<String>() ?? [];
 
     //se lobby vuota, cancella lobby
     if (playersList.isEmpty) {
@@ -116,24 +116,23 @@ class LobbyService {
         'hostUid': newHost,
       });
     }
+  }
 
-    // Se la partita era già avviata e ora c'è un solo player, aggiorniamo a "Game Over"
-    // if (status == 'inGame' && playersList.length == 1) {
-    //   // Imposta lo status della lobby a 'finished'
-    //   // e aggiorna gameState.status = 'Game Over'
-    //   final gameStateMap = data['gameState'];
-    //   if (gameStateMap != null) {
-    //     final newGameState = Map<String, dynamic>.from(gameStateMap);
-    //     newGameState['status'] = 'Game Over';
-    //     await lobbyRef.update({
-    //       'status': 'finished',
-    //       'gameState': newGameState,
-    //     });
-    //   } else {
-    //     // se non c'è un gameState, aggiorni solo 'status'
-    //     await lobbyRef.update({'status': 'finished'});
-    //   }
-    // }
+  //chiama internamente leaveLobby(riassegnando host se necessario), ricarica lobby e forza stato gioco a "Game Over" e lobby.status a "waiting"
+  Future<void> forceAbandonGame(String lobbyId) async {
+    final docRef = firestore.collection("lobbies").doc(lobbyId);
+    // 1) Chiama leaveLobby(lobbyId) per logica di riassegnazione e pulizia
+    await leaveLobby(lobbyId);
+
+    // 2) Poi ricarica e setta gameState = "Game Over" e lobby.status = "waiting"
+    final snap = await docRef.get();
+    if (!snap.exists) return;
+    final data = snap.data()!;
+    final gameStateMap = data["gameState"];
+    if (gameStateMap != null) {
+      gameStateMap["status"] = "Game Over";
+    }
+    await docRef.update({"status": "waiting", "gameState": gameStateMap});
   }
 
   /// Mostra la lista di tutte le lobbies con status=waiting

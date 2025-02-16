@@ -36,47 +36,15 @@ class _GameScreenState extends State<GameScreen> {
     super.dispose();
   }
 
-  // Future<void> _handlePlayerExit() async {
-  //   if (currentUserId == null) return;
-  //   try {
-  //     await lobbyService.playerAbandonedGame(widget.lobbyId, currentUserId!);
-  //     print("Giocatore $currentUserId ha abbandonato la partita");
-  //   } catch (e) {
-  //     print("Errore durante la gestione dell'abbandono del giocatore: $e");
-  //   }
-  // }
-
   Future<void> _leaveGame() async {
     if (currentUserId == null) return;
     try {
-      // Carichiamo la lobby corrente
-      final docRef =
-          FirebaseFirestore.instance.collection("lobbies").doc(widget.lobbyId);
-      final snap = await docRef.get();
-      if (!snap.exists) return;
-
-      final data = snap.data()!;
-      // Rimuoviamo il giocatore dall'array "players"
-      final updatedPlayers = (data["players"] as List<dynamic>)
-          .where((uid) => uid != currentUserId)
-          .toList();
-
-      // gameState.status = "Game Over"
-      // status della lobby a "waiting"
-      final gameStateMap = data["gameState"];
-      if (gameStateMap != null) {
-        gameStateMap["status"] = "Game Over";
-      }
-
-      await docRef.update({
-        "players": updatedPlayers,
-        "status": "waiting",
-        "gameState": gameStateMap
-      });
+      await lobbyService.forceAbandonGame(widget.lobbyId);
     } catch (e) {
       print("Errore nel leaveGame: $e");
     }
   }
+
 
   Future<bool> _onWillPop() async {
     // Mostriamo un dialog di conferma
